@@ -34,6 +34,21 @@ SHOTS = [
     ('bed3', 'Bed Room 3', "13'1½\" x 10'4½\"  ·  oak panelled headboard wall, sage linens", 5.0, 'pan_l'),
     ('bed2', 'Bed Room 2', "14'0\" x 10'4½\"  ·  blue-grey & oak, study desk, full-height wardrobe", 5.5, 'push'),
 ]
+# Captions for the Luxury beige & wood scheme (same shots, different design notes).
+LUXE = {
+    'foyer': "14'7½\" x 10'10½\"  ·  beige bouclé sofa and lounge chairs, brass floor lamp",
+    'drawing': 'Cream wall panelling with mouldings, walnut credenza, botanical art',
+    'hall': 'Cream, walnut and marble under cove-lit false ceilings',
+    'dining': "10'4½\" x 14'9\"  ·  walnut table, upholstered chairs, gold ring chandelier",
+    'living': "10'9\" x 10'10½\"  ·  marble TV wall with walnut fins, beige L-sofa, ceiling fan",
+    'sitout': "6'1½\" x 10'10½\"  ·  herringbone deck, swing chair, planters",
+    'kitchen': "12'1½\" x 10'10½\"  ·  cream lacquer L-kitchen, marble backsplash, quartz top",
+    'kitchen2': 'Cream tall unit with built-in oven & microwave, French-door fridge, pantry',
+    'master': "14'3\" x 10'10½\"  ·  walnut veneer wall with LED reveal, wingback headboard",
+    'master2': 'Walnut wardrobe & dresser, brass mirror, ceiling fan',
+    'bed3': "13'1½\" x 10'4½\"  ·  oak panelled wall, sand & olive linens",
+    'bed2': "14'0\" x 10'4½\"  ·  greige & oak, study desk, full-height wardrobe",
+}
 XFADE = 1.0
 TITLE_SECS, END_SECS = 3.5, 4.0
 
@@ -107,13 +122,19 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--stills', required=True)
     ap.add_argument('--out', required=True)
+    ap.add_argument('--theme', default='warm')
     a = ap.parse_args()
 
     shots = [s for s in SHOTS if os.path.exists(os.path.join(a.stills, s[0] + '.jpg'))]
-    title = card([('3 BHK Residence', 120, 'serif'), ('', 0, 'rule'), ('Modern Interior Design  ·  Virtual Tour', 40, 'sans'),
+    if a.theme == 'luxe':
+        shots = [(n, t, LUXE.get(n, sub), secs, mo) for n, t, sub, secs, mo in shots]
+    design = 'Luxury Beige & Wood' if a.theme == 'luxe' else 'Warm Modern'
+    title = card([('3 BHK Residence', 120, 'serif'), ('', 0, 'rule'), (f'{design} Interior Design  ·  Virtual Tour', 40, 'sans'),
                   ('BUA 1890 sft   ·   Carpet Area 1455 sft', 32, 'sans')])
-    end = card([('Warm Modern Interiors', 96, 'serif'), ('', 0, 'rule'),
-                ('Marble-look floors  ·  oak & walnut  ·  cove lighting  ·  L-shaped modular kitchen', 32, 'sans'),
+    finishes = ('Cream panelling  ·  walnut veneer  ·  beige marble  ·  gold accents  ·  cream modular kitchen' if a.theme == 'luxe'
+                else 'Marble-look floors  ·  oak & walnut  ·  cove lighting  ·  L-shaped modular kitchen')
+    end = card([(f'{design} Interiors', 96, 'serif'), ('', 0, 'rule'),
+                (finishes, 32, 'sans'),
                 ('Drawing · Dining · Living · Kitchen · 3 Bedrooms · Pooja · Sit Out', 32, 'sans')])
     # timeline: segments overlap by XFADE seconds
     segs = [('card', title, TITLE_SECS, None)]
