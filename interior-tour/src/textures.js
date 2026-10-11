@@ -331,3 +331,94 @@ export function sky() {
   ctx.fillStyle = g; ctx.fillRect(0, 0, 16, 512);
   return toTex(c, { repeat: false });
 }
+
+// Painterly wall art for the photoreal renders: paper grain, watercolour
+// washes and ink, in muted earth tones.
+function paper(ctx, W, H, tone) {
+  ctx.fillStyle = tone;
+  ctx.fillRect(0, 0, W, H);
+  for (let i = 0; i < 30000; i++) {
+    ctx.fillStyle = `rgba(${rand() > 0.5 ? '255,255,255' : '90,70,50'},${rr(0.01, 0.04)})`;
+    ctx.fillRect(rr(0, W), rr(0, H), rr(1, 3), rr(1, 3));
+  }
+}
+
+function wash(ctx, x, y, r, color, layers = 14) {
+  for (let i = 0; i < layers; i++) {
+    ctx.fillStyle = color;
+    ctx.globalAlpha = rr(0.03, 0.08);
+    ctx.beginPath();
+    const n = 18;
+    for (let k = 0; k <= n; k++) {
+      const a = (k / n) * Math.PI * 2;
+      const rad = r * rr(0.75, 1.1);
+      const px = x + Math.cos(a) * rad, py = y + Math.sin(a) * rad * rr(0.8, 1.1);
+      if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+export function painting(style, palette) {
+  const W = 768, H = 960;
+  const [c, ctx] = canvas(W, H);
+  paper(ctx, W, H, palette[0]);
+  if (style === 'botanical') {
+    // ink leaf sprigs with watercolour fills
+    for (let s = 0; s < 3; s++) {
+      const bx = W * (0.3 + s * 0.2), by = H * 0.92;
+      let x = bx, y = by, a = -Math.PI / 2 + rr(-0.25, 0.25);
+      const pts = [];
+      for (let k = 0; k < 40; k++) { a += rr(-0.05, 0.05); x += Math.cos(a) * 16; y += Math.sin(a) * 16; pts.push([x, y, a]); }
+      ctx.strokeStyle = palette[3]; ctx.lineWidth = 2.2; ctx.globalAlpha = 0.85;
+      ctx.beginPath(); ctx.moveTo(bx, by); pts.forEach(([px, py]) => ctx.lineTo(px, py)); ctx.stroke();
+      pts.forEach(([px, py, pa], k) => {
+        if (k % 3 || k < 4) return;
+        for (const side of [-1, 1]) {
+          const la = pa + side * rr(0.7, 1.1), L = rr(50, 95) * (1 - k / 60);
+          ctx.save(); ctx.translate(px, py); ctx.rotate(la);
+          ctx.globalAlpha = 0.35; ctx.fillStyle = palette[1 + ((k + s) % 2)];
+          ctx.beginPath(); ctx.ellipse(L / 2, 0, L / 2, L / 6, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.globalAlpha = 0.8; ctx.strokeStyle = palette[3]; ctx.lineWidth = 1.2;
+          ctx.beginPath(); ctx.ellipse(L / 2, 0, L / 2, L / 6, 0, 0, Math.PI * 2); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(L, 0); ctx.stroke();
+          ctx.restore();
+        }
+      });
+    }
+    ctx.globalAlpha = 1;
+  } else if (style === 'landscape') {
+    // misty layered hills
+    const sky = ctx.createLinearGradient(0, 0, 0, H * 0.6);
+    sky.addColorStop(0, palette[0]); sky.addColorStop(1, palette[4]);
+    ctx.globalAlpha = 0.7; ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
+    wash(ctx, W * 0.68, H * 0.24, 60, palette[2], 10);
+    for (let l = 0; l < 5; l++) {
+      const y0 = H * (0.42 + l * 0.11);
+      ctx.fillStyle = palette[1 + (l % 3)];
+      for (let pass = 0; pass < 6; pass++) {
+        ctx.globalAlpha = 0.1 + l * 0.03;
+        ctx.beginPath(); ctx.moveTo(0, H);
+        for (let x = 0; x <= W; x += 12) ctx.lineTo(x, y0 + Math.sin(x / (90 + l * 30) + l * 2) * (40 - l * 5) + rr(-4, 4));
+        ctx.lineTo(W, H); ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+  } else {
+    // layered brush strokes with bristle texture
+    for (let s = 0; s < 22; s++) {
+      const col = palette[1 + (s % (palette.length - 1))];
+      const x0 = rr(-50, W), y0 = rr(0, H), len = rr(150, 420), wdt = rr(30, 90), ang = rr(-0.5, 0.5);
+      ctx.save(); ctx.translate(x0, y0); ctx.rotate(ang);
+      for (let b = 0; b < wdt; b += 2) {
+        ctx.strokeStyle = col; ctx.globalAlpha = rr(0.05, 0.22); ctx.lineWidth = rr(1, 3);
+        ctx.beginPath(); ctx.moveTo(rr(0, 20), b);
+        ctx.bezierCurveTo(len * 0.3, b + rr(-6, 6), len * 0.6, b + rr(-6, 6), len * rr(0.8, 1), b + rr(-4, 4)); ctx.stroke();
+      }
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+  }
+  return toTex(c, { repeat: false });
+}

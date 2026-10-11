@@ -10,6 +10,7 @@ import { cameraAt, labelAt, DURATION } from './tour.js';
 const FT = 0.3048;
 const params = new URLSearchParams(location.search);
 const RENDER_MODE = params.has('render');
+const EXPORT_MODE = params.has('export');
 const W = +params.get('w') || window.innerWidth;
 const Hh = +params.get('h') || window.innerHeight;
 
@@ -33,6 +34,12 @@ const camera = new THREE.PerspectiveCamera(66, W / Hh, 0.05, 2000);
 
 // ---------------------------------------------------------------- build
 const m = makeMaterials();
+// name materials after their palette key so exported meshes stay identifiable
+for (const [k, v] of Object.entries(m)) {
+  if (v.isMaterial) v.name = k;
+  else if (Array.isArray(v)) v.forEach((x, i) => { x.name = `${k}${i}`; });
+  else for (const [k2, x] of Object.entries(v)) x.name = `${k}_${k2}`;
+}
 const { root, ceiling, lights, blobs } = buildApartment(m);
 for (const mat of Object.values(m).flat()) {
   if (mat.isMeshStandardMaterial && (mat.roughness < 0.42 || mat.metalness > 0.4)) {
@@ -41,8 +48,8 @@ for (const mat of Object.values(m).flat()) {
   }
 }
 
-// soft contact-shadow blobs under furniture
-{
+// soft contact-shadow blobs under furniture (the path-traced export gets real shadows)
+if (!EXPORT_MODE) {
   const c = document.createElement('canvas'); c.width = c.height = 128;
   const g = c.getContext('2d');
   const grd = g.createRadialGradient(64, 64, 8, 64, 64, 64);
@@ -78,6 +85,7 @@ function mergeStatic(group) {
   const out = new THREE.Group();
   for (const [mat, geos] of buckets) {
     const mesh = new THREE.Mesh(mergeGeometries(geos, false), mat);
+    mesh.name = mat.name;
     const transparent = mat.transparent || mat.isMeshBasicMaterial;
     mesh.castShadow = !transparent;
     mesh.receiveShadow = !mat.isMeshBasicMaterial;
@@ -139,7 +147,23 @@ function applyTour(t) {
   fadeEl.style.opacity = Math.min(1, fade);
 }
 
-if (RENDER_MODE) {
+if (EXPORT_MODE) {
+  // Export the model (metres) for the path-traced renders: apartment, ceiling and surroundings minus the sky dome.
+  window.exportGLB = async () => {
+    const { GLTFExporter } = await import('three/addons/exporters/GLTFExporter.js');
+    apt.name = 'apartment'; ceil.name = 'ceiling'; surroundings.name = 'surroundings';
+    surroundings.remove(surroundings.children[0]);
+    const out = new THREE.Group();
+    out.scale.setScalar(FT);
+    out.add(apt, ceil, surroundings);
+    const buf = await new GLTFExporter().parseAsync(out, { binary: true, maxTextureSize: 2048 });
+    let bin = '';
+    const bytes = new Uint8Array(buf);
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return { glb: btoa(bin), lights };
+  };
+  window.ready = true;
+} else if (RENDER_MODE) {
   document.body.classList.add('render');
   window.renderAt = (t) => { applyTour(t); renderer.render(scene, camera); window.__info = { ...renderer.info.render, calls: renderer.info.render.calls, programs: renderer.info.programs.length }; return true; };
   window.ready = true;

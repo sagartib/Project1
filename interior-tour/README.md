@@ -4,8 +4,8 @@ Interior design for the 3 BHK apartment (**BUA 1890 sft · Carpet 1455 sft**, we
 modelled to the dimensions on the brochure floor plan and presented as a rendered walkthrough video plus an
 interactive 3D tour.
 
-- **Video:** `output/virtual-tour.mp4` (1280×720, 30 fps, about 2.5 minutes)
-- **Stills:** `output/stills/` (one frame per room)
+- **Photoreal video:** `output/virtual-tour-photoreal.mp4` (1920×1080, path-traced in Blender Cycles)
+- **Photoreal stills:** `output/photoreal/` (one Full HD render per room)
 - **Interactive:** open `index.html` through any static server (`npx serve .`), then use the guided tour or switch to free orbit (dollhouse view).
 
 ## Design concept — "Warm Modern"
@@ -86,7 +86,32 @@ taken from the floor plan.
 | `src/builders.js` | Materials and parametric furniture (sofas, beds, wardrobes, kitchen parts and more) |
 | `src/textures.js` | Canvas-generated marble, wood, tile, fabric, rug and art textures |
 | `src/tour.js` | Camera path and room captions |
-| `render.mjs` | Renders the tour frame by frame in headless Chromium and encodes the MP4 with ffmpeg |
+| `render.mjs` | Renders the real-time tour frame by frame in headless Chromium |
+| `export-glb.mjs` | Exports the model to glTF for Blender |
+| `blender/scene.py` | Cycles materials, lighting, cameras and rendering |
+| `video/make_video.py` | Builds the walkthrough video from the stills |
+
+### Photoreal renders (Blender Cycles)
+
+The same model is exported to glTF and path-traced in Cycles, using:
+
+- realistic materials: mirror-polished marble, wood grain bump, fabric sheen, bevelled edges
+- warm 2700K downlights and hidden cove strips that wash the ceiling
+- lamps and pendants, plus afternoon sun and sky through the windows
+
+Cameras are kept level, like architectural photography. The video is cut from the stills with slow push-ins and pans,
+captions and crossfades.
+
+```bash
+pip install bpy==5.2.2                       # Blender as a Python module (Python 3.13)
+node export-glb.mjs                          # -> build/apartment.glb
+python blender/scene.py --glb build/apartment.glb --out output/photoreal --samples 56
+python3 video/make_video.py --stills output/photoreal --out output/virtual-tour-photoreal.mp4
+```
+
+Shot list, lighting and material finishes are in `blender/scene.py`; captions and timing are in `video/make_video.py`.
+
+### Real-time preview (three.js)
 
 ```bash
 npm install

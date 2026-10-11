@@ -95,10 +95,10 @@ export function makeMaterials() {
     fridge: std({ color: '#b9bbbd', roughness: 0.3, metalness: 0.7 }),
   };
   m._art = [
-    std({ map: T.art(['#efe5d6', '#c9774b', '#e2b170', '#5b6e5d', '#2f3e46'], 'arches'), roughness: 0.9 }),
-    std({ map: T.art(['#e9eef0', '#9fb7c1', '#5e8193', '#2f4858', '#d9b48f'], 'waves'), roughness: 0.9 }),
-    std({ map: T.art(['#f2ede4', '#d08c60', '#2f3e46', '#97a97c', '#e8c39e'], 'blocks'), roughness: 0.9 }),
-    std({ map: T.art(['#f5efe6', '#8a9a5b', '#cfa27e', '#3d5a4a', '#e8d6b9'], 'arches'), roughness: 0.9 }),
+    std({ map: T.painting('brush', ['#ece3d4', '#b07a55', '#d8b98f', '#6f7a63', '#3e4a4f']), roughness: 0.9 }),
+    std({ map: T.painting('landscape', ['#efe7da', '#a9b2a6', '#7e8f86', '#56645f', '#e8d6bd']), roughness: 0.9 }),
+    std({ map: T.painting('botanical', ['#f1eadc', '#8a9a6b', '#b9a274', '#4a4a3c', '#e8dcc6']), roughness: 0.9 }),
+    std({ map: T.painting('botanical', ['#efe6d6', '#b98a68', '#8f9b78', '#5a4636', '#eadfcc']), roughness: 0.9 }),
   ];
   m._rug = {
     drawing: std({ map: T.rug('border', ['#d9cfbf', '#7a5a45', '#b08968']), roughness: 1 }),
@@ -389,11 +389,12 @@ export function plant(m, { h = 4.5, pot = m.pot, r = 0.7, leaf = m.leaf, kind = 
   const base = r * 1.6;
   if (kind === 'fiddle') {
     cyl(0.04, 0.05, h - base, m.trunk, 0, base + (h - base) / 2, 0, g, 6);
-    for (let i = 0; i < 26; i++) {
-      const y = base + 0.6 + (i / 26) * (h - base - 0.6);
+    for (let i = 0; i < 44; i++) {
+      const y = base + 0.6 + (i / 44) * (h - base - 0.6);
       const a = i * 2.4;
-      const leafMesh = sphere(0.35, leaf, Math.cos(a) * 0.45, y, Math.sin(a) * 0.45, g, 1, 0.25, 1.4);
-      leafMesh.rotation.y = -a; leafMesh.rotation.z = 0.5;
+      const sz = rr(0.26, 0.4) * (1 - (i / 44) * 0.35);
+      const leafMesh = sphere(sz, leaf, Math.cos(a) * 0.45, y, Math.sin(a) * 0.45, g, 1, 0.18, 1.5);
+      leafMesh.rotation.y = -a; leafMesh.rotation.z = rr(0.2, 0.9);
     }
   } else if (kind === 'palm') {
     for (let i = 0; i < 9; i++) {
@@ -403,9 +404,13 @@ export function plant(m, { h = 4.5, pot = m.pot, r = 0.7, leaf = m.leaf, kind = 
       const top = sphere(0.7, leaf, Math.cos(a) * 0.9, h - 0.2, Math.sin(a) * 0.9, g, 1.3, 0.15, 0.5);
       top.rotation.y = -a; top.rotation.z = Math.cos(a) * 0.4;
     }
-  } else { // bushy
-    for (let i = 0; i < 9; i++) {
-      sphere(rr(0.45, 0.7), i % 2 ? leaf : m.leafLight, rr(-0.5, 0.5), base + rr(0.3, h - base - 0.5), rr(-0.5, 0.5), g, 1, 0.8, 1);
+  } else { // bushy: dense clusters of small leaves
+    const n = Math.round(70 * (h / 3));
+    for (let i = 0; i < n; i++) {
+      const u = rr(0, 1), a = rr(0, Math.PI * 2), rad = Math.sqrt(u) * r * 1.3;
+      const y = base + 0.2 + rr(0, h - base - 0.2) * (1 - u * 0.35);
+      const lf = sphere(rr(0.14, 0.24), i % 3 ? leaf : m.leafLight, Math.cos(a) * rad, y, Math.sin(a) * rad, g, 1, 0.22, 1.9);
+      lf.rotation.set(rr(-0.8, 0.8), a, rr(-0.6, 0.6));
     }
   }
   return g;
