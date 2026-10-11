@@ -23,6 +23,7 @@
     display: flex; gap: 2px; padding: 3px; background: var(--glass); backdrop-filter: blur(8px); border-radius: 999px; }
   #design button { border: 0; background: transparent; color: var(--muted); padding: 6px 12px; border-radius: 999px; font: 600 12px var(--body); white-space: nowrap; }
   #design [aria-checked="true"] { background: var(--ink); color: var(--brass-ink); }
+  @media (max-width: 520px) { #design .n { display: none; } #design button { padding: 6px 10px; } }
 
   /* 360 */
   #pano { position: fixed; inset: 0; }
@@ -81,8 +82,9 @@
   <a id="modelLink" href="./model.html#luxe" role="tab" aria-selected="false">3D Model</a>
 </nav>
 <div id="design" role="radiogroup" aria-label="Design">
-  <button type="button" role="radio" data-d="warm" aria-checked="false">Design 1 · Warm Modern</button>
-  <button type="button" role="radio" data-d="luxe" aria-checked="true">Design 2 · Luxury</button>
+  <button type="button" role="radio" data-d="warm" aria-checked="false"><span class="n">Design 1 · </span>Warm Modern</button>
+  <button type="button" role="radio" data-d="luxe" aria-checked="false"><span class="n">Design 2 · </span>Luxury</button>
+  <button type="button" role="radio" data-d="pastel" aria-checked="true"><span class="n">Design 3 · </span>Pastel</button>
 </div>
 
 <section id="view360">
@@ -157,10 +159,11 @@ const PHOTOS = [
 
 // ---------------------------------------------------------------- designs
 // Panoramas published per design (the rest are still rendering).
-const AVAIL = { warm: ['p_dining', 'p_living', 'p_kitchen', 'p_master', 'p_drawing', 'p_sitout', 'p_foyer', 'p_bed3', 'p_bed2'], luxe: ['p_dining', 'p_living', 'p_kitchen', 'p_master', 'p_drawing', 'p_sitout', 'p_foyer', 'p_bed3', 'p_bed2'] };
+const AVAIL = { warm: ['p_dining', 'p_living', 'p_kitchen', 'p_master', 'p_drawing', 'p_sitout', 'p_foyer', 'p_bed3', 'p_bed2'], luxe: ['p_dining', 'p_living', 'p_kitchen', 'p_master', 'p_drawing', 'p_sitout', 'p_foyer', 'p_bed3', 'p_bed2'], pastel: [] };
 const DESIGNS = {
   warm: { photos: 'photos', panos: 'panos', video: 'tour-video.mp4' },
   luxe: { photos: 'photos-luxe', panos: 'panos-luxe', video: 'tour-video-luxe.mp4' },
+  pastel: { photos: 'photos-pastel', panos: 'panos-pastel', video: 'tour-video-pastel.mp4' },
 };
 const LUXE_SUB = {
   foyer: 'Beige bouclé sofa and lounge chairs, brass floor lamp', drawing: 'Cream wall panelling, walnut credenza, botanical art',
@@ -173,9 +176,20 @@ const LUXE_SUB = {
   p_master: `14'3" x 10'10½" · walnut veneer wall, wingback headboard`, p_bed3: `13'1½" x 10'4½" · oak panelled wall, sand linens`,
   p_bed2: `14'0" x 10'4½" · greige & oak, study desk`,
 };
-let DESIGN = 'luxe';
-try { if (['warm', 'luxe'].includes(localStorage.getItem('design'))) DESIGN = localStorage.getItem('design'); } catch {}
-const sub = (id, fallback) => (DESIGN === 'luxe' && LUXE_SUB[id]) || fallback;
+const PASTEL_SUB = {
+  foyer: 'Blush sofa, butter & mint lounge chairs', drawing: 'Blush moulded wall panelling, white-oak credenza, pastel art',
+  hall: 'Blush, mint and powder blue under cove-lit ceilings', dining: 'White-oak table, mint & blush chairs, brass pendants',
+  living: 'Powder-blue fluted TV wall, powder-blue L-sofa', kitchen: 'Powder-blue L-kitchen, white uppers, subway tiles',
+  kitchen2: 'Powder-blue tall unit with oven & microwave, French-door fridge', master: 'Blush walls, white-oak fluted panel, lavender headboard',
+  master2: 'White-oak wardrobe & dresser, brass mirror', bed3: 'Lavender walls, oak panelling, peach linens', bed2: 'Mint walls, oak wardrobe, study desk',
+  p_drawing: `14'7½" x 10'10½" · blush panelling, pastel lounge chairs`, p_dining: `10'4½" x 14'9" · white-oak table, mint & blush chairs`,
+  p_living: `10'9" x 10'10½" · powder-blue fluted TV wall and sofa`, p_kitchen: `12'1½" x 10'10½" · powder-blue modular kitchen`,
+  p_master: `14'3" x 10'10½" · blush walls, lavender headboard`, p_bed3: `13'1½" x 10'4½" · lavender walls, peach linens`,
+  p_bed2: `14'0" x 10'4½" · mint walls, study desk`,
+};
+let DESIGN = 'pastel';
+try { if (['warm', 'luxe', 'pastel'].includes(localStorage.getItem('design'))) DESIGN = localStorage.getItem('design'); } catch {}
+const sub = (id, fallback) => ({ luxe: LUXE_SUB, pastel: PASTEL_SUB }[DESIGN]?.[id]) || fallback;
 
 function setDesign(d) {
   DESIGN = d;
