@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3 BHK Virtual Tour</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #f7f2ea; --panel: rgba(20, 18, 16, 0.55); --accent: #c9a46a; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #111; font-family: Inter, system-ui, sans-serif; }
+  #app canvas { display: block; }
+  #label { position: absolute; left: 4.5%; bottom: 9%; color: var(--ink); opacity: 0; pointer-events: none;
+    text-shadow: 0 2px 18px rgba(0,0,0,.55); }
+  #label h1 { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: clamp(26px, 4.4vw, 64px); margin: 0 0 .15em; letter-spacing: .01em; }
+  #label p { margin: 0; font-size: clamp(12px, 1.45vw, 21px); opacity: .92; padding-left: .2em; border-left: 3px solid var(--accent); padding: .1em 0 .1em .7em; }
+  #fade { position: absolute; inset: 0; background: #0d0c0b; opacity: 1; pointer-events: none; }
+  #brand { position: absolute; right: 3.5%; top: 5%; color: var(--ink); font-family: 'Cormorant Garamond', Georgia, serif; font-size: clamp(14px, 1.6vw, 24px); letter-spacing: .3em; text-transform: uppercase; opacity: .85; text-shadow: 0 1px 10px rgba(0,0,0,.5); }
+  #controls { position: absolute; left: 50%; transform: translateX(-50%); bottom: 16px; display: flex; gap: 10px; align-items: center;
+    background: var(--panel); backdrop-filter: blur(6px); padding: 8px 14px; border-radius: 999px; width: min(640px, calc(100% - 32px)); box-sizing: border-box; }
+  #controls button { background: var(--accent); color: #1b1712; border: 0; border-radius: 999px; padding: 7px 14px; font: 500 13px Inter, sans-serif; cursor: pointer; white-space: nowrap; }
+  #controls input { flex: 1; min-width: 0; accent-color: var(--accent); }
+  body.free #scrub, body.free #play { visibility: hidden; }
+  body.render #controls { display: none; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="app"></div>
+<div id="brand">Virtual Tour</div>
+<div id="label"><h1></h1><p></p></div>
+<div id="fade"></div>
+<div id="controls">
+  <button id="play">Pause</button>
+  <input id="scrub" type="range" min="0" step="0.01" value="0" aria-label="Tour position">
+  <button id="mode">Free orbit</button>
+</div>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
