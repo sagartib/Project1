@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>3 BHK Virtual Tour</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Manrope:wght@400;600&display=swap">
+<style>
+  /* Full-bleed WebGL stage; caption lower-left, transport pill fixed at the bottom. Single dark look by choice. */
+  :root {
+    --stage: #12100e; --ink: #f6f0e6; --muted: #cfc4b4; --brass: #c9a46a; --brass-ink: #1d1813; --glass: rgba(24, 21, 18, 0.62);
+    --display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    --body: 'Manrope', 'Segoe UI', system-ui, sans-serif;
+    color-scheme: dark;
+  }
+  html, body { height: 100%; overflow: hidden; background: var(--stage); color: var(--ink); font-family: var(--body); }
+  #app { position: fixed; inset: 0; }
+  #app canvas { display: block; touch-action: none; }
+  #label { position: fixed; left: max(16px, 4.5vw); right: 16px; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); opacity: 0; pointer-events: none; text-shadow: 0 2px 18px rgba(0,0,0,.6); }
+  #label h1 { font-family: var(--display); font-weight: 600; font-size: clamp(28px, 4.4vw, 60px); margin: 0 0 .2em; text-wrap: balance; }
+  #label p { margin: 0; max-width: 60ch; font-size: clamp(12px, 1.4vw, 18px); color: var(--muted); border-left: 3px solid var(--brass); padding: .1em 0 .1em .7em; }
+  #fade { position: fixed; inset: 0; background: var(--stage); opacity: 1; pointer-events: none; }
+  #brand { position: fixed; right: 16px; top: calc(16px + env(safe-area-inset-top, 0px)); font-family: var(--display); font-size: clamp(13px, 1.5vw, 20px); letter-spacing: .3em; text-transform: uppercase; color: var(--muted); text-shadow: 0 1px 10px rgba(0,0,0,.5); }
+  #controls { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 10px; align-items: center;
+    background: var(--glass); backdrop-filter: blur(8px); padding: 8px 12px; border-radius: 999px; width: min(640px, calc(100% - 32px)); box-sizing: border-box; }
+  #controls button { background: var(--brass); color: var(--brass-ink); border: 0; border-radius: 999px; padding: 8px 14px; font: 600 13px var(--body); cursor: pointer; white-space: nowrap; }
+  #controls button:focus-visible, #controls input:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  #controls input { flex: 1; min-width: 0; accent-color: var(--brass); }
+  body.free #scrub, body.free #play { visibility: hidden; }
+  #hint { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(70px + env(safe-area-inset-bottom, 0px)); font-size: 12px; color: var(--muted); }
+  body:not(.free) #hint { display: none; }
+  #back { position: fixed; left: 16px; top: calc(16px + env(safe-area-inset-top, 0px)); z-index: 5; color: var(--ink); background: var(--glass); backdrop-filter: blur(8px); padding: 8px 14px; border-radius: 999px; font: 600 13px var(--body); text-decoration: none; }
+  #back:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  html, body { margin: 0; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<a id="back" href="./virtual-tour.html">← Photoreal tour</a>
+<div id="app"></div>
+<div id="brand">Virtual Tour</div>
+<div id="label"><h1></h1><p></p></div>
+<div id="fade"></div>
+<div id="hint">Drag to orbit, pinch or scroll to zoom</div>
+<div id="controls">
+  <button id="play" type="button">Pause</button>
+  <input id="scrub" type="range" min="0" step="0.01" value="0" aria-label="Tour position">
+  <button id="mode" type="button">Free orbit</button>
+</div>
+<script type="module" src="./src/main.js"></script>
+
+</body>
+</html>

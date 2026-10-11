@@ -34,7 +34,7 @@ SHOTS = {
     'hall': ((1.6, 4.8, 16.2), (30, 4.6, 15.6), 18, 'Drawing · Dining · Living'),
     'dining': ((23.4, 4.6, 24.6), (17.0, 4.0, 13.0), 16, 'Dining'),
     'living': ((34.9, 4.6, 15.6), (26.0, 4.4, 12.6), 16, 'Living Room'),
-    'sitout': ((37.0, 4.4, 20.7), (39.8, 4.2, 11.0), 16, 'Sit Out'),
+    'sitout': ((32.8, 4.6, 19.0), (40.0, 4.0, 14.0), 18, 'Sit Out'),
     'kitchen': ((27.8, 4.7, 24.4), (35.0, 4.0, 30.5), 16, 'Modular Kitchen'),
     'kitchen2': ((34.6, 4.7, 24.1), (26.5, 4.0, 29.5), 16, 'Modular Kitchen'),
     'master': ((11.0, 4.6, 32.0), (5.0, 4.2, 22.5), 16, 'Master Bedroom'),
@@ -42,6 +42,19 @@ SHOTS = {
     'pooja': ((22.25, 4.4, 12.6), (22.25, 4.2, 0.0), 30, 'Pooja Room'),
     'bed3': ((27.6, 4.6, 1.2), (33.0, 4.0, 9.5), 16, 'Bed Room 3'),
     'bed2': ((3.0, 4.6, 9.9), (12.5, 4.0, 3.5), 16, 'Bed Room 2'),
+}
+
+# 360° panorama viewpoints (ft, eye height 5'), used by the interactive photoreal tour.
+PANOS = {
+    'p_drawing': (8.5, 5.0, 14.2),
+    'p_dining': (19.45, 5.0, 21.0),
+    'p_living': (31.0, 5.0, 13.6),
+    'p_sitout': (37.6, 5.0, 16.2),
+    'p_kitchen': (31.0, 5.0, 26.6),
+    'p_master': (11.5, 5.0, 27.5),
+    'p_foyer': (22.2, 5.0, 8.8),
+    'p_bed3': (27.6, 5.0, 4.0),
+    'p_bed2': (4.5, 5.0, 8.5),
 }
 
 # Room light boxes (ft): x0, x1, z0, z1, watts. Soft ceiling area lights that
@@ -404,6 +417,7 @@ def main():
     ap.add_argument('--exposure', type=float, default=-0.2)
     ap.add_argument('--look', default='AgX - Punchy')
     ap.add_argument('--kelvin', type=int, default=2700)
+    ap.add_argument('--panos', default='', help='comma list of PANOS to render as 360° equirectangular images')
     a = ap.parse_args(argv)
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -447,6 +461,23 @@ def main():
     ceiling = [o for o in bpy.data.objects if o.name.startswith('ceiling') or (o.parent and o.parent.name.startswith('ceiling'))]
     if a.save_blend:
         bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath(a.save_blend))
+    if a.panos:
+        for name in a.panos.split(','):
+            for o in ceiling:
+                o.hide_render = False
+            cd = bpy.data.cameras.new('Pano')
+            cd.type = 'PANO'
+            cd.panorama_type = 'EQUIRECTANGULAR'
+            cd.clip_start = 0.05
+            cam = bpy.data.objects.new('Pano', cd)
+            bpy.context.collection.objects.link(cam)
+            cam.location = plan(*PANOS[name])
+            cam.rotation_euler = (math.radians(90), 0, 0)  # image centre faces north
+            sc.camera = cam
+            sc.render.filepath = os.path.join(os.path.abspath(a.out), f'{name}.jpg')
+            bpy.ops.render.render(write_still=True)
+            print('rendered', name, flush=True)
+        return
     for name in a.shots.split(','):
         pos, tgt, lens, _ = SHOTS[name]
         overview = name == 'overview'

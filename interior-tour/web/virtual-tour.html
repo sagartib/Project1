@@ -1,0 +1,342 @@
+<title>3 BHK Virtual Tour</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Manrope:wght@400;600&display=swap">
+<style>
+  /* Full-bleed 360° stage; room caption lower-left, floor-plan minimap lower-right, mode tabs on top. Single dark look by choice. */
+  :root {
+    --stage: #12100e; --ink: #f6f0e6; --muted: #cfc4b4; --brass: #c9a46a; --brass-ink: #1d1813;
+    --glass: rgba(24, 21, 18, 0.62); --line: rgba(246, 240, 230, 0.22); --room: rgba(246, 240, 230, 0.07);
+    --display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    --body: 'Manrope', 'Segoe UI', system-ui, sans-serif;
+    color-scheme: dark;
+  }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; overflow: hidden; background: var(--stage); color: var(--ink); font-family: var(--body); }
+  button { font: 600 13px var(--body); cursor: pointer; }
+  button:focus-visible, a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  #tabs { position: fixed; z-index: 10; top: calc(14px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%);
+    display: flex; gap: 4px; padding: 4px; background: var(--glass); backdrop-filter: blur(8px); border-radius: 999px; }
+  #tabs button, #tabs a { border: 0; background: transparent; color: var(--muted); padding: 8px 14px; border-radius: 999px; text-decoration: none; font: 600 13px var(--body); white-space: nowrap; }
+  #tabs [aria-selected="true"] { background: var(--brass); color: var(--brass-ink); }
+
+  /* 360 */
+  #pano { position: fixed; inset: 0; }
+  #pano canvas { display: block; touch-action: none; cursor: grab; }
+  #pano canvas:active { cursor: grabbing; }
+  #veil { position: fixed; inset: 0; background: var(--stage); opacity: 1; pointer-events: none; transition: opacity .45s ease; }
+  #caption { position: fixed; left: 16px; right: 16px; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); pointer-events: none; text-shadow: 0 2px 16px rgba(0,0,0,.65); max-width: 60ch; }
+  #caption h1 { font-family: var(--display); font-weight: 600; font-size: clamp(30px, 4.6vw, 60px); margin: 0 0 .15em; text-wrap: balance; }
+  #caption p { margin: 0; font-size: clamp(12px, 1.4vw, 16px); color: var(--muted); border-left: 3px solid var(--brass); padding: .1em 0 .1em .7em; }
+  #hint { position: fixed; left: 50%; transform: translateX(-50%); top: calc(64px + env(safe-area-inset-top, 0px)); font-size: 12px; color: var(--muted);
+    background: var(--glass); padding: 6px 12px; border-radius: 999px; transition: opacity .6s; pointer-events: none; white-space: nowrap; }
+  #map { position: fixed; right: 16px; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); width: min(250px, 42vw); background: var(--glass); backdrop-filter: blur(8px);
+    border-radius: 12px; padding: 10px; box-sizing: border-box; }
+  #map svg { display: block; width: 100%; height: auto; }
+  #map .room { fill: var(--room); stroke: var(--line); stroke-width: .25; }
+  #map .dot { fill: var(--muted); cursor: pointer; }
+  #map .dot.on { fill: var(--brass); }
+  #map .cone { fill: var(--brass); opacity: .35; }
+  #map .lbl { font: 600 1.5px var(--body); fill: var(--muted); pointer-events: none; }
+  #pending { position: fixed; inset: 0; display: grid; place-items: center; text-align: center; padding: 0 16px; color: var(--muted); }
+  #pending h2 { font-family: var(--display); font-size: 34px; color: var(--ink); margin: 0 0 8px; }
+  #pending[hidden] { display: none; }
+  @media (max-width: 560px) { #caption { bottom: calc(20px + env(safe-area-inset-bottom, 0px) + min(250px, 42vw) * .82 + 16px); } }
+
+  /* photos */
+  #photos { position: fixed; inset: 0; overflow-y: auto; padding: calc(76px + env(safe-area-inset-top, 0px)) 16px 32px; box-sizing: border-box; }
+  #photos .grid { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 14px; }
+  #photos figure { margin: 0; cursor: zoom-in; }
+  #photos img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; border-radius: 6px; background: #221e1a; }
+  #photos figcaption { padding: 8px 2px 0; display: flex; flex-direction: column; gap: 2px; }
+  #photos figcaption b { font-family: var(--display); font-size: 22px; font-weight: 600; }
+  #photos figcaption span { font-size: 13px; color: var(--muted); }
+  #photos button.fig { all: unset; display: block; cursor: zoom-in; }
+  #photos button.fig:focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; border-radius: 6px; }
+  #lightbox { position: fixed; inset: 0; z-index: 20; background: rgba(10,9,8,.96); display: grid; grid-template-rows: 1fr auto; padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; }
+  #lightbox img { width: 100%; height: 100%; object-fit: contain; min-height: 0; }
+  #lightbox .bar { display: flex; align-items: center; gap: 10px; padding-top: 12px; }
+  #lightbox .bar div { flex: 1; min-width: 0; }
+  #lightbox .bar b { font-family: var(--display); font-size: 24px; display: block; }
+  #lightbox .bar span { color: var(--muted); font-size: 13px; }
+  #lightbox button { background: var(--glass); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; }
+  @media (prefers-reduced-motion: reduce) { #veil { transition: none; } }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js" } }
+</script>
+
+<nav id="tabs" role="tablist" aria-label="View">
+  <button id="tab360" role="tab" aria-selected="true">360° Tour</button>
+  <button id="tabPhotos" role="tab" aria-selected="false">Photos</button>
+  <a href="./model.html" role="tab" aria-selected="false">3D Model</a>
+</nav>
+
+<section id="view360">
+  <div id="pano"></div>
+  <div id="veil"></div>
+  <div id="hint">Drag to look around · tap a gold marker to walk</div>
+  <div id="caption"><h1></h1><p></p></div>
+  <div id="map" aria-label="Floor plan"></div>
+  <div id="pending" hidden><div><h2>360° rooms are rendering</h2><p>Open Photos to see the finished photoreal rooms meanwhile.</p></div></div>
+</section>
+
+<section id="photos" hidden>
+  <div class="grid"></div>
+</section>
+<div id="lightbox" hidden>
+  <img alt="">
+  <div class="bar"><button id="prev" type="button">Prev</button><div><b></b><span></span></div><button id="next" type="button">Next</button><button id="close" type="button">Close</button></div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+
+// ---------------------------------------------------------------- data (plan feet: x east, z south)
+const ROOMS = [
+  ['Bed Room 2', 0, 14.3, 0, 10.6], ['Toilet', 14.3, 19.9, 0, 8.5], ['Pooja', 19.9, 24.6, 0, 6.1], ['Bed Room 3', 24.6, 37, 0, 10.6],
+  ['Balcony', 37, 41.3, 0, 10.6], ['Drawing', 0, 14.3, 10.6, 21.6], ['Dining', 14.3, 24.6, 10.6, 25.4], ['Living', 24.6, 35.3, 10.6, 21.6],
+  ['Sit Out', 35.3, 41.3, 10.6, 21.6], ['Master', 0, 14.3, 21.6, 32.6], ['Toilet', 14.3, 20.3, 25.4, 32.6], ['Toilet', 20.3, 24.6, 25.4, 32.6],
+  ['Kitchen', 24.6, 37, 21.6, 32.6], ['Utility', 37, 41.3, 21.6, 32.6],
+];
+const EYE = 5;
+// pano: position, opening yaw (deg, 0 = north, 90 = east), caption, links [target, door x, door z]
+const PANOS = {
+  p_drawing: { pos: [8.5, 14.2], yaw: 160, title: 'Drawing Room', sub: `14'7½" x 10'10½" · oak fluted wall, beige sofa, rust & mustard accents`,
+    links: [['p_dining', 15.5, 16.5], ['p_bed2', 12.1, 10.9]] },
+  p_dining: { pos: [19.45, 21.0], yaw: 0, title: 'Dining', sub: `10'4½" x 14'9" · marble 6-seater, brass pendants, view to pooja`,
+    links: [['p_drawing', 13.6, 17.5], ['p_living', 25.5, 17.5], ['p_kitchen', 24.4, 23.4], ['p_master', 14.6, 23.4], ['p_foyer', 20.5, 12.0]] },
+  p_living: { pos: [31.0, 13.6], yaw: 200, title: 'Living Room', sub: `10'9" x 10'10½" · fluted TV wall, sage L-sofa, cove-lit ceiling`,
+    links: [['p_dining', 23.6, 15.5], ['p_sitout', 35.0, 16.2]] },
+  p_sitout: { pos: [37.6, 16.2], yaw: 0, title: 'Sit Out', sub: `6'1½" x 10'10½" · herringbone deck, swing chair, vertical garden`,
+    links: [['p_living', 35.6, 16.2]] },
+  p_kitchen: { pos: [31.0, 26.6], yaw: 120, title: 'Modular Kitchen', sub: `12'1½" x 10'10½" · L-shaped handle-less, quartz top, tall appliance unit`,
+    links: [['p_dining', 24.9, 23.4]] },
+  p_master: { pos: [11.5, 27.5], yaw: 300, title: 'Master Bedroom', sub: `14'3" x 10'10½" · walnut fluted headboard wall, wardrobe, dresser`,
+    links: [['p_dining', 14.0, 23.4]] },
+  p_foyer: { pos: [22.2, 8.8], yaw: 0, title: 'Pooja Room', sub: `4'1½" x 6'1½" · walnut mandir with backlit jali, wash counter`,
+    links: [['p_dining', 20.5, 12.6], ['p_bed3', 24.3, 8.9]] },
+  p_bed3: { pos: [27.6, 4.0], yaw: 120, title: 'Bed Room 3', sub: `13'1½" x 10'4½" · oak panelled headboard wall, sage linens`,
+    links: [['p_foyer', 24.9, 8.9]] },
+  p_bed2: { pos: [4.5, 8.5], yaw: 100, title: 'Bed Room 2', sub: `14'0" x 10'4½" · blue-grey & oak, study desk, full-height wardrobe`,
+    links: [['p_drawing', 12.1, 10.3]] },
+};
+const PHOTOS = [
+  ['overview', 'The Apartment', 'BUA 1890 sft · Carpet 1455 sft · west-facing entrance'],
+  ['hall', 'Drawing · Dining · Living', 'One open hall under cove-lit false ceilings'],
+  ['foyer', 'Drawing Room', `14'7½" x 10'10½" · beige lounge seating, rust & mustard accents`],
+  ['drawing', 'Drawing Room', 'Oak fluted feature wall, walnut credenza, mirrored shoe cabinet'],
+  ['dining', 'Dining', `10'4½" x 14'9" · marble 6-seater, brass pendants, wash counter`],
+  ['living', 'Living Room', `10'9" x 10'10½" · fluted TV wall, sage L-sofa`],
+  ['sitout', 'Sit Out', `6'1½" x 10'10½" · herringbone deck, swing chair`],
+  ['kitchen', 'Modular Kitchen', 'L-shaped, handle-less, quartz top, subway backsplash'],
+  ['kitchen2', 'Modular Kitchen', 'Tall unit with oven & microwave, French-door fridge, pantry'],
+  ['master', 'Master Bedroom', `14'3" x 10'10½" · walnut fluted headboard wall`],
+  ['master2', 'Master Bedroom', 'Wardrobe, walnut dresser with brass mirror'],
+  ['pooja', 'Pooja Room', 'Walnut mandir with backlit jali, carved jali doors'],
+  ['bed3', 'Bed Room 3', 'Oak panelled headboard wall, sage linens'],
+  ['bed2', 'Bed Room 2', 'Blue-grey & oak, study desk, wardrobe'],
+];
+
+// ---------------------------------------------------------------- tabs
+const $ = (s) => document.querySelector(s);
+function show(which) {
+  $('#view360').hidden = which !== '360';
+  $('#photos').hidden = which !== 'photos';
+  $('#tab360').setAttribute('aria-selected', which === '360');
+  $('#tabPhotos').setAttribute('aria-selected', which === 'photos');
+  if (which === 'photos') buildPhotos();
+}
+$('#tab360').onclick = () => show('360');
+$('#tabPhotos').onclick = () => show('photos');
+
+// ---------------------------------------------------------------- photos
+let built = false, lbIndex = 0;
+function buildPhotos() {
+  if (built) return; built = true;
+  const grid = $('#photos .grid');
+  PHOTOS.forEach(([f, t, s], i) => {
+    const b = document.createElement('button');
+    b.className = 'fig'; b.type = 'button';
+    b.innerHTML = `<figure><img loading="lazy" src="./photos/${f}.jpg" alt="${t}"><figcaption><b>${t}</b><span>${s}</span></figcaption></figure>`;
+    b.onclick = () => openLb(i);
+    grid.appendChild(b);
+  });
+}
+function openLb(i) {
+  lbIndex = (i + PHOTOS.length) % PHOTOS.length;
+  const [f, t, s] = PHOTOS[lbIndex];
+  $('#lightbox img').src = `./photos/${f}.jpg`; $('#lightbox img').alt = t;
+  $('#lightbox b').textContent = t; $('#lightbox span').textContent = s;
+  $('#lightbox').hidden = false;
+}
+$('#prev').onclick = () => openLb(lbIndex - 1);
+$('#next').onclick = () => openLb(lbIndex + 1);
+$('#close').onclick = () => { $('#lightbox').hidden = true; };
+addEventListener('keydown', (e) => {
+  if ($('#lightbox').hidden) return;
+  if (e.key === 'Escape') $('#lightbox').hidden = true;
+  if (e.key === 'ArrowLeft') openLb(lbIndex - 1);
+  if (e.key === 'ArrowRight') openLb(lbIndex + 1);
+});
+
+// ---------------------------------------------------------------- floor-plan minimap
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.createElementNS(NS, 'svg');
+svg.setAttribute('viewBox', '-1 -1 43.3 34.6');
+for (const [n, x0, x1, z0, z1] of ROOMS) {
+  const r = document.createElementNS(NS, 'rect');
+  Object.entries({ x: x0, y: z0, width: x1 - x0, height: z1 - z0, class: 'room' }).forEach(([k, v]) => r.setAttribute(k, v));
+  svg.appendChild(r);
+  const t = document.createElementNS(NS, 'text');
+  Object.entries({ x: x0 + 0.6, y: z0 + 2, class: 'lbl' }).forEach(([k, v]) => t.setAttribute(k, v));
+  t.textContent = n; svg.appendChild(t);
+}
+const cone = document.createElementNS(NS, 'path'); cone.setAttribute('class', 'cone'); svg.appendChild(cone);
+const dots = {};
+for (const [id, p] of Object.entries(PANOS)) {
+  const c = document.createElementNS(NS, 'circle');
+  Object.entries({ cx: p.pos[0], cy: p.pos[1], r: 1.1, class: 'dot', tabindex: 0, role: 'button', 'aria-label': p.title }).forEach(([k, v]) => c.setAttribute(k, v));
+  c.addEventListener('click', () => go(id));
+  c.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(id); });
+  svg.appendChild(c); dots[id] = c;
+}
+$('#map').appendChild(svg);
+
+// ---------------------------------------------------------------- 360 viewer
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+$('#pano').appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
+const sphereGeo = new THREE.SphereGeometry(500, 96, 48);
+sphereGeo.scale(-1, 1, 1);
+const sphereMat = new THREE.MeshBasicMaterial();
+const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+sphere.rotation.y = -Math.PI / 2; // image centre faces north (-z)
+scene.add(sphere);
+const markers = new THREE.Group();
+scene.add(markers);
+const loader = new THREE.TextureLoader();
+const cache = {};
+const loadTex = (url) => cache[url] ||= new Promise((res, rej) => loader.load(url, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; res(t); }, undefined, rej));
+
+function markerMesh() {
+  const g = new THREE.Group();
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.62, 0.8, 48), new THREE.MeshBasicMaterial({ color: 0xc9a46a, transparent: true, opacity: 0.95, depthTest: false }));
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(0.62, 48), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.18, depthTest: false }));
+  const arrow = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape([new THREE.Vector2(-0.25, -0.12), new THREE.Vector2(0, 0.22), new THREE.Vector2(0.25, -0.12)])),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false }));
+  for (const m of [disc, ring, arrow]) { m.rotation.x = -Math.PI / 2; m.renderOrder = 2; g.add(m); }
+  arrow.position.y = 0.01;
+  g.userData.arrow = arrow;
+  return g;
+}
+
+let current = null, yaw = 0, pitch = -4, fov = 75, idle = 0, busy = false;
+async function go(id, first = false) {
+  if (busy || id === current) return;
+  busy = true;
+  const p = PANOS[id];
+  const hi = loadTex(`./panos/${id}.jpg`);
+  const lo = loadTex(`./panos/${id}_lo.jpg`);
+  $('#veil').style.opacity = 1;
+  await new Promise((r) => setTimeout(r, first ? 0 : 420));
+  let tex;
+  try { tex = await Promise.race([hi, lo]); } catch {
+    busy = false; $('#pending').hidden = false; $('#veil').style.opacity = 0;
+    if (first) show('photos'); // 360 images not published yet: open on the photo gallery
+    return;
+  }
+  $('#pending').hidden = true;
+  // keep facing the walking direction when arriving from another room
+  if (current && !first) {
+    const a = PANOS[current].pos;
+    yaw = THREE.MathUtils.radToDeg(Math.atan2(p.pos[0] - a[0], -(p.pos[1] - a[1])));
+  } else yaw = p.yaw;
+  pitch = -4; fov = 75;
+  sphereMat.map = tex; sphereMat.needsUpdate = true;
+  hi.then((t) => { if (current === id) { sphereMat.map = t; sphereMat.needsUpdate = true; } }).catch(() => {});
+  current = id;
+  markers.clear();
+  for (const [target, dx, dz] of p.links) {
+    const m = markerMesh();
+    const vx = dx - p.pos[0], vz = dz - p.pos[1];
+    m.position.set(vx, -EYE + 0.05, vz);
+    m.userData.arrow.rotation.z = -Math.atan2(vx, -vz); // arrow points away from the viewer
+    m.userData.target = target;
+    markers.add(m);
+  }
+  $('#caption h1').textContent = p.title;
+  $('#caption p').textContent = p.sub;
+  for (const [k, d] of Object.entries(dots)) d.classList.toggle('on', k === id);
+  $('#veil').style.opacity = 0;
+  busy = false;
+}
+
+// look controls: drag, wheel/pinch zoom, arrow keys; slow auto-pan when idle
+const el = renderer.domElement;
+const pointers = new Map();
+let down = null, pinch0 = 0, moved = 0;
+el.addEventListener('pointerdown', (e) => {
+  el.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, [e.clientX, e.clientY]);
+  down = { x: e.clientX, y: e.clientY, yaw, pitch }; moved = 0; idle = 0;
+  if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch0 = Math.hypot(a[0] - b[0], a[1] - b[1]); down.fov = fov; }
+});
+el.addEventListener('pointermove', (e) => {
+  if (!pointers.has(e.pointerId)) return;
+  pointers.set(e.pointerId, [e.clientX, e.clientY]);
+  if (pointers.size === 2) {
+    const [a, b] = [...pointers.values()];
+    fov = THREE.MathUtils.clamp(down.fov * pinch0 / Math.hypot(a[0] - b[0], a[1] - b[1]), 35, 95);
+    moved = 99; return;
+  }
+  const k = fov / innerHeight;
+  moved = Math.max(moved, Math.hypot(e.clientX - down.x, e.clientY - down.y));
+  yaw = down.yaw - (e.clientX - down.x) * k;
+  pitch = THREE.MathUtils.clamp(down.pitch + (e.clientY - down.y) * k, -80, 80);
+});
+const raycaster = new THREE.Raycaster();
+el.addEventListener('pointerup', (e) => {
+  pointers.delete(e.pointerId);
+  if (moved > 6 || pointers.size) return;
+  const ndc = new THREE.Vector2((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  raycaster.setFromCamera(ndc, camera);
+  const hit = raycaster.intersectObjects(markers.children, true)[0];
+  if (hit) { let o = hit.object; while (!o.userData.target) o = o.parent; go(o.userData.target); }
+});
+el.addEventListener('pointercancel', (e) => pointers.delete(e.pointerId));
+el.addEventListener('wheel', (e) => { e.preventDefault(); fov = THREE.MathUtils.clamp(fov + e.deltaY * 0.04, 35, 95); idle = 0; }, { passive: false });
+addEventListener('keydown', (e) => {
+  if (!$('#lightbox').hidden || $('#view360').hidden) return;
+  if (e.key === 'ArrowLeft') yaw -= 5; if (e.key === 'ArrowRight') yaw += 5;
+  if (e.key === 'ArrowUp') pitch = Math.min(80, pitch + 5); if (e.key === 'ArrowDown') pitch = Math.max(-80, pitch - 5);
+  idle = 0;
+});
+addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let last = performance.now();
+renderer.setAnimationLoop((now) => {
+  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  idle += dt;
+  if (!reduce && idle > 4 && !pointers.size) yaw += dt * 3;
+  if (idle > 3) $('#hint').style.opacity = 0;
+  camera.fov = fov; camera.updateProjectionMatrix();
+  const y = THREE.MathUtils.degToRad(yaw), pt = THREE.MathUtils.degToRad(pitch);
+  camera.lookAt(Math.sin(y) * Math.cos(pt), Math.sin(pt), -Math.cos(y) * Math.cos(pt));
+  const pulse = 1 + Math.sin(now / 400) * 0.06;
+  markers.children.forEach((m) => m.scale.setScalar(pulse));
+  // minimap view cone
+  if (current) {
+    const [cx, cz] = PANOS[current].pos, h = THREE.MathUtils.degToRad(fov * camera.aspect / 2), r = 5;
+    const p1 = [cx + Math.sin(y - h) * r, cz - Math.cos(y - h) * r], p2 = [cx + Math.sin(y + h) * r, cz - Math.cos(y + h) * r];
+    cone.setAttribute('d', `M${cx},${cz} L${p1} A${r},${r} 0 0 1 ${p2} Z`);
+  }
+  renderer.render(scene, camera);
+});
+
+go('p_dining', true);
+</script>
