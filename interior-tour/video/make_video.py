@@ -49,6 +49,20 @@ LUXE = {
     'bed3': "13'1½\" x 10'4½\"  ·  oak panelled wall, sand & olive linens",
     'bed2': "14'0\" x 10'4½\"  ·  greige & oak, study desk, full-height wardrobe",
 }
+PASTEL = {
+    'foyer': "14'7½\" x 10'10½\"  ·  blush sofa, butter & mint lounge chairs",
+    'drawing': 'Blush moulded wall panelling, white-oak credenza, pastel art',
+    'hall': 'Blush, mint and powder blue under cove-lit ceilings',
+    'dining': "10'4½\" x 14'9\"  ·  white-oak table, mint & blush chairs, brass pendants",
+    'living': "10'9\" x 10'10½\"  ·  powder-blue fluted TV wall, powder-blue L-sofa",
+    'sitout': "6'1½\" x 10'10½\"  ·  herringbone deck, swing chair, planters",
+    'kitchen': "12'1½\" x 10'10½\"  ·  powder-blue L-kitchen, white uppers, subway tiles",
+    'kitchen2': 'Powder-blue tall unit with oven & microwave, French-door fridge',
+    'master': "14'3\" x 10'10½\"  ·  blush walls, white-oak fluted panel, lavender headboard",
+    'master2': 'White-oak wardrobe & dresser, brass mirror',
+    'bed3': "13'1½\" x 10'4½\"  ·  lavender walls, oak panelling, peach linens",
+    'bed2': "14'0\" x 10'4½\"  ·  mint walls, oak wardrobe, study desk",
+}
 XFADE = 1.0
 TITLE_SECS, END_SECS = 3.5, 4.0
 
@@ -126,13 +140,14 @@ def main():
     a = ap.parse_args()
 
     shots = [s for s in SHOTS if os.path.exists(os.path.join(a.stills, s[0] + '.jpg'))]
-    if a.theme == 'luxe':
-        shots = [(n, t, LUXE.get(n, sub), secs, mo) for n, t, sub, secs, mo in shots]
-    design = 'Luxury Beige & Wood' if a.theme == 'luxe' else 'Warm Modern'
+    notes = {'luxe': LUXE, 'pastel': PASTEL}.get(a.theme, {})
+    shots = [(n, t, notes.get(n, sub), secs, mo) for n, t, sub, secs, mo in shots]
+    design = {'luxe': 'Luxury Beige & Wood', 'pastel': 'Pastel'}.get(a.theme, 'Warm Modern')
     title = card([('3 BHK Residence', 120, 'serif'), ('', 0, 'rule'), (f'{design} Interior Design  ·  Virtual Tour', 40, 'sans'),
                   ('BUA 1890 sft   ·   Carpet Area 1455 sft', 32, 'sans')])
-    finishes = ('Cream panelling  ·  walnut veneer  ·  beige marble  ·  gold accents  ·  cream modular kitchen' if a.theme == 'luxe'
-                else 'Marble-look floors  ·  oak & walnut  ·  cove lighting  ·  L-shaped modular kitchen')
+    finishes = {'luxe': 'Cream panelling  ·  walnut veneer  ·  beige marble  ·  gold accents  ·  cream modular kitchen',
+                'pastel': 'Blush  ·  mint  ·  powder blue  ·  lavender  ·  white oak & brass  ·  powder-blue modular kitchen'}.get(
+        a.theme, 'Marble-look floors  ·  oak & walnut  ·  cove lighting  ·  L-shaped modular kitchen')
     end = card([(f'{design} Interiors', 96, 'serif'), ('', 0, 'rule'),
                 (finishes, 32, 'sans'),
                 ('Drawing · Dining · Living · Kitchen · 3 Bedrooms · Pooja · Sit Out', 32, 'sans')])

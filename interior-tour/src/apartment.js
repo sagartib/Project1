@@ -28,6 +28,7 @@ export const ROOMS = {
 
 export function buildApartment(m, theme = 'warm') {
   const luxe = theme === 'luxe';
+  const pastel = theme === 'pastel';
   const root = new THREE.Group(); // static, merged later
   const ceiling = new THREE.Group(); // hidden in the dollhouse view
   const lights = [];
@@ -236,9 +237,9 @@ export function buildApartment(m, theme = 'warm') {
   // ============================================================ DRAWING ROOM
   // Contemporary formal lounge: oak fluted feature wall, beige sofa, rust & mustard accents.
   {
-    const fw = luxe ? B.mouldingWall(m, 9.4, H - 0.9) : B.flutedPanel(m, 7.6, H - 0.9);
-    P(fw, luxe ? 5.4 : 6.4, 10.8, 0);
-    art(luxe ? 2 : 0, 3.0, 3.8, 6.4, 5.6, luxe ? 10.98 : 10.92, 0);
+    const fw = luxe || pastel ? B.mouldingWall(m, 9.4, H - 0.9, pastel ? m.pastelPink : m.lacquerWhite) : B.flutedPanel(m, 7.6, H - 0.9);
+    P(fw, luxe || pastel ? 5.4 : 6.4, 10.8, 0);
+    art(luxe ? 2 : 0, 3.0, 3.8, 6.4, 5.6, luxe || pastel ? 10.98 : 10.92, 0);
     const cred = new THREE.Group();
     B.box(5.6, 1.6, 1.3, m.walnut, 0, 1.25, 0, cred);
     B.box(5.6, 0.06, 1.3, m.darkStone, 0, 2.08, 0, cred);
@@ -265,7 +266,7 @@ export function buildApartment(m, theme = 'warm') {
 
   // ============================================================ DINING
   {
-    P(B.diningSet(m, luxe ? { top: m.walnut, chairA: m.linenGrey, chairB: m.linenGrey } : {}), 19.45, 16.4);
+    P(B.diningSet(m, luxe ? { top: m.walnut, chairA: m.linenGrey, chairB: m.linenGrey } : pastel ? { top: m.oak, chairA: m.velvetMustard, chairB: m.sofaFabric } : {}), 19.45, 16.4);
     blob(19.45, 16.4, 6, 7.5, 0, 0.55);
     P(luxe ? B.chandelierRing(m, 2.0, H, 2.6) : B.pendantCluster(m, 3, 2.1, 2.9, H), 19.45, 16.4);
     // crockery unit + bar in the passage (fluted glass shutters, backlit)
@@ -296,7 +297,7 @@ export function buildApartment(m, theme = 'warm') {
 
   // ============================================================ LIVING
   {
-    P(B.tvUnit(m, { w: 8, panelW: 6.4, panelH: H - 0.9, tv: 5.5, panel: luxe ? 'marble' : 'fluted' }), 29.6, 10.8);
+    P(B.tvUnit(m, { w: 8, panelW: 6.4, panelH: H - 0.9, tv: 5.5, panel: luxe ? 'marble' : 'fluted', panelMat: pastel ? m.pastelBlue : m.oak }), 29.6, 10.8);
     if (luxe) P(B.ceilingFan(m, H - 0.9), 29.6, 16.4);
     blob(29.6, 11.6, 8.2, 1.6, 0, 0.35);
     P(B.lSofa(m, { w: 8.8, chaise: 5.6, mat: m.sofaGreen, cushions: [m.cushionC, m.cushionA, m.cushionC] }), 29.4, 19.85, 180);
@@ -460,7 +461,7 @@ export function buildApartment(m, theme = 'warm') {
   // Warm terracotta & walnut: channel-tufted headboard wall, sliding wardrobe, study/dresser.
   {
     B.slab(0.4, 0, 21.82, 14.1, H - 0.75, 21.86, m.wallTerracotta, root);
-    P(luxe ? B.veneerWall(m, 13.6, H - 0.75) : B.flutedPanel(m, 8.6, H - 0.75, m.walnut, 0.3), 6.9, 21.85);
+    P(luxe ? B.veneerWall(m, 13.6, H - 0.75) : B.flutedPanel(m, 8.6, H - 0.75, pastel ? m.oak : m.walnut, 0.3), 6.9, 21.85);
     if (luxe) P(B.ceilingFan(m, H - 0.75), 7.0, 28.6);
     P(B.bed(m, { w: 6, l: 6.75, frame: m.walnut, head: m.linenGrey, duvet: m.linen, throwMat: m.velvetRust, pillows: [m.linen, m.linen], accent: [m.cushionA, m.cushionC], headH: luxe ? 4.4 : 3.4, wings: luxe }), 6.9, 25.75);
     blob(6.9, 25.4, 7.4, 8);

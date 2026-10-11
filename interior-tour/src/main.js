@@ -11,7 +11,7 @@ const FT = 0.3048;
 const params = new URLSearchParams(location.search);
 const RENDER_MODE = params.has('render');
 const EXPORT_MODE = params.has('export');
-const THEME = params.get('theme') || (/^#(warm|luxe)$/.test(location.hash) ? location.hash.slice(1) : 'warm');
+const THEME = params.get('theme') || (/^#(warm|luxe|pastel)$/.test(location.hash) ? location.hash.slice(1) : 'warm');
 const W = +params.get('w') || window.innerWidth;
 const Hh = +params.get('h') || window.innerHeight;
 

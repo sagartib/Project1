@@ -347,14 +347,14 @@ export function flutedPanel(m, w, h, mat = m.oak, pitch = 0.22) {
   return g;
 }
 
-export function tvUnit(m, { w = 8, panelW = 6.5, panelH = 9.0, tv = 5.0, panel = 'fluted' } = {}) {
+export function tvUnit(m, { w = 8, panelW = 6.5, panelH = 9.0, tv = 5.0, panel = 'fluted', panelMat = m.oak } = {}) {
   const g = new THREE.Group();
   if (panel === 'marble') {
     // book-matched marble slab framed by walnut fins
     box(panelW, panelH, 0.12, m.calacatta, 0, panelH / 2, 0.06, g);
     for (const sx of [-1, 1]) box(0.35, panelH, 0.3, m.walnut, sx * (panelW / 2 + 0.17), panelH / 2, 0.15, g);
     box(panelW, 0.05, 0.1, m.led, 0, panelH - 0.2, 0.15, g);
-  } else g.add(flutedPanel(m, panelW, panelH));
+  } else g.add(flutedPanel(m, panelW, panelH, panelMat));
   // TV
   const tvW = tv * 0.87, tvH = tv * 0.49;
   box(tvW + 0.1, tvH + 0.1, 0.12, m.black, 0, 4.6, 0.32, g);
@@ -640,11 +640,12 @@ export function ceilingFan(m, ceilingY = 10) {
 }
 
 // Alternative design schemes applied to the shared material palette.
-export const THEMES = ['warm', 'luxe'];
+export const THEMES = ['warm', 'luxe', 'pastel'];
 export function applyTheme(m, theme) {
-  if (theme !== 'luxe') return;
   const set = (mat, color, extra = {}) => { mat.color.set(color); Object.assign(mat, extra); };
   const fab = (mat, color) => { mat.map = T.fabric(color); mat.needsUpdate = true; };
+  if (theme === 'pastel') return applyPastel(m, set, fab);
+  if (theme !== 'luxe') return;
   // walls: warm cream with greige accents
   set(m.wall, '#efe6d8'); set(m.wallTerracotta, '#d9c9b2'); set(m.wallBlue, '#ddd2c2');
   set(m.wallTaupe, '#d6c6ae'); set(m.wallSage, '#ddd0bc');
@@ -663,4 +664,36 @@ export function applyTheme(m, theme) {
   m._rug.master.map = T.rug('abstract', ['#ded3c3', '#bfae96', '#a8957f']);
   m._rug.bed.map = T.rug('lines', ['#e2d8c9', '#b29f86', '#c9b9a2']);
   for (const r of Object.values(m._rug)) r.needsUpdate = true;
+}
+
+// Pastel: blush, mint, powder blue, lavender and butter with white oak and brass.
+function applyPastel(m, set, fab) {
+  const lacquer = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.3 });
+  m.pastelPink = lacquer('#efd0ca');
+  m.pastelBlue = lacquer('#c4d8ea');
+  // walls: soft blush-white with pastel accent walls
+  set(m.wall, '#f5ebe6'); set(m.wallTerracotta, '#efcfc8'); set(m.wallBlue, '#cfe5d7');
+  set(m.wallTaupe, '#ded3ec'); set(m.wallSage, '#cddff0');
+  // light white-oak joinery instead of walnut
+  m.oak.map = T.wood('#e3cdb0', '#bfa27e'); m.oak.needsUpdate = true;
+  m.walnut.map = T.wood('#d2b693', '#a88a64'); m.walnut.needsUpdate = true;
+  // upholstery
+  fab(m.sofaFabric, '#ecc9c2'); fab(m.sofaGreen, '#bfd2e4'); fab(m.velvetRust, '#f1dc9c');
+  fab(m.velvetMustard, '#bfe0cc'); fab(m.linenGrey, '#d8cde8'); fab(m.linenBlue, '#bcdccb');
+  fab(m.linenSage, '#f3cdb3'); fab(m.cushionA, '#f3c3a8'); fab(m.cushionB, '#c9bce0'); fab(m.cushionC, '#fbf4ea');
+  set(m.curtainDark, '#e8c6c0');
+  // kitchen: powder-blue bases & tall units, white uppers, white subway tiles
+  set(m.kitchenGreen, '#bcd3e6', { roughness: 0.3 });
+  set(m.kitchenUpper, '#f7f4ef');
+  // pastel rugs and art
+  m._rug.drawing.map = T.rug('abstract', ['#f4e6e1', '#e9c3bc', '#cfe2d6', '#e6dcef']);
+  m._rug.living.map = T.rug('border', ['#eef2f6', '#b9cfe2', '#f1dfa8']);
+  m._rug.master.map = T.rug('lines', ['#f6ebe7', '#e7bfb8', '#d6cbe6']);
+  m._rug.bed.map = T.rug('abstract', ['#eef6f1', '#bfe0cc', '#f1dc9c']);
+  for (const r of Object.values(m._rug)) r.needsUpdate = true;
+  m._art[0].map = T.painting('brush', ['#f8f1ec', '#efc4bd', '#bcd3e6', '#cfe6d8', '#e2d6ee']);
+  m._art[1].map = T.painting('landscape', ['#f6f0ea', '#cfe2d6', '#bcd3e6', '#d8cde8', '#f6e3cf']);
+  m._art[2].map = T.painting('botanical', ['#f7efe9', '#e9b9b1', '#bfdcc9', '#8a7f8f', '#f3e7d8']);
+  m._art[3].map = T.painting('botanical', ['#f3f1f7', '#cbbfe2', '#f1d39a', '#7f7a8c', '#ece6f2']);
+  for (const a of m._art) a.needsUpdate = true;
 }
