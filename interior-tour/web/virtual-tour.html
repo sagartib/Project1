@@ -42,6 +42,10 @@
   #pending[hidden] { display: none; }
   @media (max-width: 560px) { #caption { bottom: calc(20px + env(safe-area-inset-bottom, 0px) + min(250px, 42vw) * .82 + 16px); } }
 
+  /* video */
+  #videoView { position: fixed; inset: 0; display: grid; place-items: center; padding: calc(70px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; }
+  #videoView video { width: 100%; max-width: 1400px; max-height: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 6px; }
+
   /* photos */
   #photos { position: fixed; inset: 0; overflow-y: auto; padding: calc(76px + env(safe-area-inset-top, 0px)) 16px 32px; box-sizing: border-box; }
   #photos .grid { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 14px; }
@@ -67,6 +71,7 @@
 
 <nav id="tabs" role="tablist" aria-label="View">
   <button id="tab360" role="tab" aria-selected="true">360° Tour</button>
+  <button id="tabVideo" role="tab" aria-selected="false">Video</button>
   <button id="tabPhotos" role="tab" aria-selected="false">Photos</button>
   <a href="./model.html" role="tab" aria-selected="false">3D Model</a>
 </nav>
@@ -77,7 +82,11 @@
   <div id="hint">Drag to look around · tap a gold marker to walk</div>
   <div id="caption"><h1></h1><p></p></div>
   <div id="map" aria-label="Floor plan"></div>
-  <div id="pending" hidden><div><h2>360° rooms are rendering</h2><p>Open Photos to see the finished photoreal rooms meanwhile.</p></div></div>
+  <div id="pending" hidden><div><h2>360° rooms are rendering</h2><p>Watch the Video or open Photos to see the finished photoreal rooms meanwhile.</p></div></div>
+</section>
+
+<section id="videoView" hidden>
+  <video id="tourVideo" controls playsinline preload="metadata" poster="./photos/hall.jpg" src="./tour-video.mp4"></video>
 </section>
 
 <section id="photos" hidden>
@@ -142,12 +151,16 @@ const $ = (s) => document.querySelector(s);
 function show(which) {
   $('#view360').hidden = which !== '360';
   $('#photos').hidden = which !== 'photos';
+  $('#videoView').hidden = which !== 'video';
+  if (which !== 'video') $('#tourVideo').pause();
+  $('#tabVideo').setAttribute('aria-selected', which === 'video');
   $('#tab360').setAttribute('aria-selected', which === '360');
   $('#tabPhotos').setAttribute('aria-selected', which === 'photos');
   if (which === 'photos') buildPhotos();
 }
 $('#tab360').onclick = () => show('360');
 $('#tabPhotos').onclick = () => show('photos');
+$('#tabVideo').onclick = () => show('video');
 
 // ---------------------------------------------------------------- photos
 let built = false, lbIndex = 0;
@@ -246,7 +259,7 @@ async function go(id, first = false) {
   let tex;
   try { tex = await Promise.race([hi, lo]); } catch {
     busy = false; $('#pending').hidden = false; $('#veil').style.opacity = 0;
-    if (first) show('photos'); // 360 images not published yet: open on the photo gallery
+    if (first) show('video'); // 360 images not published yet: open on the video tour
     return;
   }
   $('#pending').hidden = true;

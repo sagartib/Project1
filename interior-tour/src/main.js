@@ -17,8 +17,8 @@ const Hh = +params.get('h') || window.innerHeight;
 const renderer = new THREE.WebGLRenderer({ antialias: params.get('aa') !== '0', preserveDrawingBuffer: RENDER_MODE });
 renderer.setPixelRatio(RENDER_MODE ? 1 : Math.min(devicePixelRatio, 2));
 renderer.setSize(W, Hh);
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.95;
+renderer.toneMapping = THREE.AgXToneMapping;
+renderer.toneMappingExposure = 1.0;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.shadowMap.autoUpdate = false;
@@ -39,6 +39,15 @@ for (const [k, v] of Object.entries(m)) {
   if (v.isMaterial) v.name = k;
   else if (Array.isArray(v)) v.forEach((x, i) => { x.name = `${k}${i}`; });
   else for (const [k2, x] of Object.entries(v)) x.name = `${k}_${k2}`;
+}
+// Real-time palette matched to the photoreal Cycles renders (the export keeps the
+// base palette because blender/scene.py applies these finishes itself).
+if (!EXPORT_MODE) {
+  m.wall.color.set('#d8c6ad');
+  m.ceiling.color.set('#ece5da');
+  m.floor.color.set('#f2e4d0');
+  m.floor.roughness = 0.1;
+  m.screen = new THREE.MeshStandardMaterial({ color: '#050506', roughness: 0.05, name: 'screen' });
 }
 const { root, ceiling, lights, blobs } = buildApartment(m);
 for (const mat of Object.values(m).flat()) {
@@ -106,7 +115,7 @@ world.add(surroundings);
 surroundings.traverse((o) => { if (o.isMesh) o.receiveShadow = false; });
 
 // ---------------------------------------------------------------- lights
-scene.add(new THREE.HemisphereLight('#eef2f5', '#c2b39e', 1.35));
+scene.add(new THREE.HemisphereLight('#fff0dc', '#bfa98c', 1.25));
 const sun = new THREE.DirectionalLight('#ffe2bd', 3.2);
 sun.position.set(-6, 14, 14);
 sun.target.position.set(6.3, 0, 5);
@@ -117,7 +126,7 @@ sun.shadow.bias = -0.0004;
 sun.shadow.normalBias = 0.02;
 scene.add(sun, sun.target);
 for (const l of lights.filter((l) => l.intensity >= 3.5)) {
-  const p = new THREE.PointLight(l.color, l.intensity, l.distance * FT, 2);
+  const p = new THREE.PointLight('#ffc98f', l.intensity * 1.3, l.distance * FT, 2);
   p.position.set(l.x * FT, l.y * FT, l.z * FT);
   scene.add(p);
 }
