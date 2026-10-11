@@ -285,7 +285,7 @@ export function floorLamp(m) {
   return g;
 }
 
-export function bed(m, { w = 6, l = 6.75, frame = m.walnut, head = m.linenGrey, duvet = m.linen, throwMat = m.linenSage, pillows = [m.linen, m.linen], accent = [] } = {}) {
+export function bed(m, { w = 6, l = 6.75, frame = m.walnut, head = m.linenGrey, duvet = m.linen, throwMat = m.linenSage, pillows = [m.linen, m.linen], accent = [], headH = 3.4, wings = false } = {}) {
   const g = new THREE.Group();
   // frame sits with headboard at z = -l/2
   box(w + 0.3, 0.9, l + 0.2, frame, 0, 0.65, 0.05, g);
@@ -298,7 +298,8 @@ export function bed(m, { w = 6, l = 6.75, frame = m.walnut, head = m.linenGrey, 
   box(w + 0.3, 0.8, 0.08, duvet, 0, 1.5, l / 2 + 0.25, g);
   rbox(w + 0.32, 0.28, 1.4, 0.1, throwMat, 0, 2.0, l / 2 - 1.0, g);
   // upholstered headboard with vertical channels
-  const hw = w + 1.2, hh = 3.4;
+  const hw = w + 1.2, hh = headH;
+  if (wings) for (const sx of [-1, 1]) rbox(0.6, hh + 0.4, 1.1, 0.2, head, sx * (hw / 2 + 0.25), (hh + 0.4) / 2 + 0.5, -l / 2 + 0.3, g);
   box(hw, hh, 0.3, frame, 0, hh / 2 + 0.6, -l / 2 - 0.1, g);
   const n = 8;
   for (let i = 0; i < n; i++) {
@@ -346,9 +347,14 @@ export function flutedPanel(m, w, h, mat = m.oak, pitch = 0.22) {
   return g;
 }
 
-export function tvUnit(m, { w = 8, panelW = 6.5, panelH = 9.0, tv = 5.0 } = {}) {
+export function tvUnit(m, { w = 8, panelW = 6.5, panelH = 9.0, tv = 5.0, panel = 'fluted' } = {}) {
   const g = new THREE.Group();
-  g.add(flutedPanel(m, panelW, panelH));
+  if (panel === 'marble') {
+    // book-matched marble slab framed by walnut fins
+    box(panelW, panelH, 0.12, m.calacatta, 0, panelH / 2, 0.06, g);
+    for (const sx of [-1, 1]) box(0.35, panelH, 0.3, m.walnut, sx * (panelW / 2 + 0.17), panelH / 2, 0.15, g);
+    box(panelW, 0.05, 0.1, m.led, 0, panelH - 0.2, 0.15, g);
+  } else g.add(flutedPanel(m, panelW, panelH));
   // TV
   const tvW = tv * 0.87, tvH = tv * 0.49;
   box(tvW + 0.1, tvH + 0.1, 0.12, m.black, 0, 4.6, 0.32, g);
@@ -417,18 +423,18 @@ export function plant(m, { h = 4.5, pot = m.pot, r = 0.7, leaf = m.leaf, kind = 
 }
 const rr = (a, b) => a + (b - a) * T.rand();
 
-export function diningSet(m) {
+export function diningSet(m, { top = m.calacatta, chairA = m.linenGrey, chairB = m.velvetMustard } = {}) {
   const g = new THREE.Group();
   // table: long axis along z
   const L = 6.5, W = 3.4;
-  rbox(W, 0.14, L, 0.06, m.calacatta, 0, 2.45, 0, g);
+  rbox(W, 0.14, L, 0.06, top, 0, 2.45, 0, g);
   for (const sz of [-1, 1]) {
     box(0.25, 2.3, 2.2, m.walnut, 0, 1.15, sz * 2.0, g);
     box(2.4, 0.2, 0.3, m.walnut, 0, 0.1, sz * 2.0, g);
   }
   // chairs: 3 per side, plus none at ends (aisle)
   for (const sx of [-1, 1]) for (let i = 0; i < 3; i++) {
-    const c = diningChair(m, i === 1 ? m.velvetMustard : m.linenGrey);
+    const c = diningChair(m, i === 1 ? chairB : chairA);
     place(g, c, sx * 2.25, (i - 1) * 2.0, sx > 0 ? -90 : 90);
   }
   // centrepiece
@@ -585,4 +591,76 @@ export function shelves(m, w = 3, n = 3) {
     cyl(0.2, 0.16, 0.5, i % 2 ? m.ceramic : m.terracotta, w / 2 - 0.5, i * 1.3 + 0.3, 0, g, 12);
   }
   return g;
+}
+
+// Classic wall panelling: raised moulding frames on a painted panel.
+export function mouldingWall(m, w, h, mat = m.lacquerWhite) {
+  const g = new THREE.Group();
+  box(w, h, 0.05, mat, 0, h / 2, 0.025, g);
+  const cols = Math.max(2, Math.round(w / 3.2));
+  const fw = (w - 0.6 * (cols + 1)) / cols;
+  const frame = (cx, y0, y1) => {
+    const t = 0.12, d = 0.08;
+    box(fw, t, d, mat, cx, y0, 0.08, g); box(fw, t, d, mat, cx, y1, 0.08, g);
+    box(t, y1 - y0, d, mat, cx - fw / 2, (y0 + y1) / 2, 0.08, g); box(t, y1 - y0, d, mat, cx + fw / 2, (y0 + y1) / 2, 0.08, g);
+  };
+  for (let i = 0; i < cols; i++) {
+    const cx = -w / 2 + 0.6 + fw / 2 + i * (fw + 0.6);
+    frame(cx, 0.9, 2.9);
+    frame(cx, 3.5, h - 0.9);
+  }
+  box(w, 0.15, 0.12, mat, 0, 3.2, 0.08, g); // dado rail
+  return g;
+}
+
+// Walnut veneer wall with vertical grooves and an LED reveal at the top.
+export function veneerWall(m, w, h, mat = m.walnut) {
+  const g = new THREE.Group();
+  const n = Math.round(w / 1.5), pw = w / n;
+  for (let i = 0; i < n; i++) box(pw - 0.03, h - 0.4, 0.1, mat, -w / 2 + pw * (i + 0.5), (h - 0.4) / 2, 0.05, g);
+  box(w, 0.06, 0.12, m.led, 0, h - 0.35, 0.08, g);
+  box(w, 0.3, 0.14, mat, 0, h - 0.15, 0.07, g);
+  return g;
+}
+
+export function ceilingFan(m, ceilingY = 10) {
+  const g = new THREE.Group();
+  cyl(0.05, 0.05, 1.0, m.brass, 0, ceilingY - 0.5, 0, g, 8);
+  cyl(0.45, 0.4, 0.35, m.brass, 0, ceilingY - 1.15, 0, g, 24);
+  sphere(0.3, m.lampShade, 0, ceilingY - 1.35, 0, g, 1, 0.5, 1);
+  for (let i = 0; i < 3; i++) {
+    const b = new THREE.Group();
+    box(2.4, 0.04, 0.55, m.walnut, 1.6, 0, 0, b);
+    b.position.y = ceilingY - 1.1;
+    b.rotation.y = (i / 3) * Math.PI * 2 + 0.4;
+    b.children[0].rotation.x = 0.12;
+    g.add(b);
+  }
+  return g;
+}
+
+// Alternative design schemes applied to the shared material palette.
+export const THEMES = ['warm', 'luxe'];
+export function applyTheme(m, theme) {
+  if (theme !== 'luxe') return;
+  const set = (mat, color, extra = {}) => { mat.color.set(color); Object.assign(mat, extra); };
+  const fab = (mat, color) => { mat.map = T.fabric(color); mat.needsUpdate = true; };
+  // walls: warm cream with greige accents
+  set(m.wall, '#efe6d8'); set(m.wallTerracotta, '#d9c9b2'); set(m.wallBlue, '#ddd2c2');
+  set(m.wallTaupe, '#d6c6ae'); set(m.wallSage, '#ddd0bc');
+  // upholstery: beige bouclé, camel and cream with muted olive/terracotta cushions
+  fab(m.sofaFabric, '#d8ccb8'); fab(m.sofaGreen, '#d2c4ac'); fab(m.velvetRust, '#e4d9c7');
+  fab(m.velvetMustard, '#b89670'); fab(m.linenGrey, '#d6cab6'); fab(m.linenBlue, '#b9a68c');
+  fab(m.linenSage, '#cdbfa6'); fab(m.cushionA, '#a9714f'); fab(m.cushionB, '#7b7d5a'); fab(m.cushionC, '#efe6d6');
+  set(m.curtainDark, '#b9a689');
+  // kitchen: cream lacquer bases & tall units, warm-white uppers, marble backsplash
+  set(m.kitchenGreen, '#e6dccb', { roughness: 0.25 });
+  set(m.kitchenUpper, '#f1eadf');
+  m.subway.map = m.calacatta.map; m.subway.userData.scale = 4; m.subway.needsUpdate = true;
+  // rugs in sand and taupe
+  m._rug.drawing.map = T.rug('abstract', ['#d9cebe', '#b8a48a', '#cbbca6', '#a48f78']);
+  m._rug.living.map = T.rug('border', ['#d4c8b6', '#9c8670', '#e6dccd']);
+  m._rug.master.map = T.rug('abstract', ['#ded3c3', '#bfae96', '#a8957f']);
+  m._rug.bed.map = T.rug('lines', ['#e2d8c9', '#b29f86', '#c9b9a2']);
+  for (const r of Object.values(m._rug)) r.needsUpdate = true;
 }

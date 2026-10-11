@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { makeMaterials } from './builders.js';
+import { makeMaterials, applyTheme } from './builders.js';
 import { buildApartment, buildSurroundings, H } from './apartment.js';
 import { sky } from './textures.js';
 import { cameraAt, labelAt, DURATION } from './tour.js';
@@ -11,6 +11,7 @@ const FT = 0.3048;
 const params = new URLSearchParams(location.search);
 const RENDER_MODE = params.has('render');
 const EXPORT_MODE = params.has('export');
+const THEME = params.get('theme') || (typeof window !== 'undefined' && window.TOUR_THEME) || 'warm';
 const W = +params.get('w') || window.innerWidth;
 const Hh = +params.get('h') || window.innerHeight;
 
@@ -34,6 +35,7 @@ const camera = new THREE.PerspectiveCamera(66, W / Hh, 0.05, 2000);
 
 // ---------------------------------------------------------------- build
 const m = makeMaterials();
+applyTheme(m, THEME);
 // name materials after their palette key so exported meshes stay identifiable
 for (const [k, v] of Object.entries(m)) {
   if (v.isMaterial) v.name = k;
@@ -43,13 +45,13 @@ for (const [k, v] of Object.entries(m)) {
 // Real-time palette matched to the photoreal Cycles renders (the export keeps the
 // base palette because blender/scene.py applies these finishes itself).
 if (!EXPORT_MODE) {
-  m.wall.color.set('#d8c6ad');
+  if (THEME === 'warm') m.wall.color.set('#d8c6ad');
   m.ceiling.color.set('#ece5da');
   m.floor.color.set('#f2e4d0');
   m.floor.roughness = 0.1;
   m.screen = new THREE.MeshStandardMaterial({ color: '#050506', roughness: 0.05, name: 'screen' });
 }
-const { root, ceiling, lights, blobs } = buildApartment(m);
+const { root, ceiling, lights, blobs } = buildApartment(m, THEME);
 for (const mat of Object.values(m).flat()) {
   if (mat.isMeshStandardMaterial && (mat.roughness < 0.42 || mat.metalness > 0.4)) {
     mat.envMap = envMap;

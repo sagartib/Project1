@@ -220,6 +220,9 @@ STONE = {'quartz', 'calacatta', 'darkStone'}
 CABINET = {'lacquerWhite', 'kitchenGreen', 'kitchenUpper', 'matteGrey'}
 
 
+THEME = 'warm'
+
+
 def fix_materials():
     for mat in bpy.data.materials:
         if not mat.use_nodes:
@@ -243,7 +246,7 @@ def fix_materials():
             continue
         elif name == 'floor':
             set_inputs(bsdf, roughness=0.05, spec=0.6)
-            tint_texture(mat, bsdf, (0.93, 0.86, 0.76))  # warm beige marble
+            tint_texture(mat, bsdf, (0.96, 0.91, 0.83) if THEME == 'luxe' else (0.93, 0.86, 0.76))  # beige marble
         elif name in ('bathFloor', 'bathWall', 'subway'):
             set_inputs(bsdf, roughness=0.12)
         elif name in STONE:
@@ -256,12 +259,13 @@ def fix_materials():
             set_inputs(bsdf, roughness=0.9, sheen=0.6, sheen_rough=0.4, spec=0.2)
             add_bump(mat, bsdf, strength=0.25, distance=0.003)
         elif name in CABINET:
-            set_inputs(bsdf, roughness=0.18 if name != 'kitchenGreen' else 0.4, coat=0.3 if name != 'kitchenGreen' else 0.0)
+            matte = name == 'kitchenGreen' and THEME != 'luxe'
+            set_inputs(bsdf, roughness=0.4 if matte else 0.18, coat=0.0 if matte else 0.3)
             add_bump(mat, bsdf, strength=0, bevel=0.004)
         elif name.startswith('wall') or name in ('ceiling', 'skirting'):
             set_inputs(bsdf, roughness=0.85, spec=0.3)
             if name == 'wall':
-                bsdf.inputs['Base Color'].default_value = (0.72, 0.62, 0.50, 1)  # warm beige paint
+                bsdf.inputs['Base Color'].default_value = (0.80, 0.72, 0.60, 1) if THEME == 'luxe' else (0.72, 0.62, 0.50, 1)  # cream / warm beige paint
             elif name == 'ceiling':
                 bsdf.inputs['Base Color'].default_value = (0.85, 0.82, 0.77, 1)
         elif name in ('ceramic',):
@@ -417,9 +421,12 @@ def main():
     ap.add_argument('--exposure', type=float, default=-0.2)
     ap.add_argument('--look', default='AgX - Punchy')
     ap.add_argument('--kelvin', type=int, default=2700)
+    ap.add_argument('--theme', default='warm')
     ap.add_argument('--panos', default='', help='comma list of PANOS to render as 360° equirectangular images')
     a = ap.parse_args(argv)
 
+    global THEME
+    THEME = a.theme
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.gltf(filepath=os.path.abspath(a.glb))
     fix_materials()

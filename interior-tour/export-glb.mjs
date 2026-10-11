@@ -6,6 +6,8 @@ import path from 'node:path';
 
 const ROOT = path.dirname(new URL(import.meta.url).pathname);
 const outDir = path.resolve(process.argv[2] || path.join(ROOT, 'build'));
+const theme = process.argv[3] || 'warm';
+const suffix = theme === 'warm' ? '' : `-${theme}`;
 const server = http.createServer((req, res) => {
   const p = path.join(ROOT, decodeURIComponent(new URL(req.url, 'http://x').pathname));
   if (!p.startsWith(ROOT) || !fs.existsSync(p) || fs.statSync(p).isDirectory()) { res.writeHead(404); return res.end(); }
@@ -22,12 +24,12 @@ page.on('console', (msg) => { if (msg.type() === 'error') console.error('[consol
 await page.route(/cdn\.jsdelivr\.net\/npm\/three@[^/]+\//, (route) => route.fulfill({
   path: path.join(ROOT, 'node_modules/three', route.request().url().replace(/^.*three@[^/]+\//, '')), contentType: 'text/javascript' }));
 await page.route(/fonts\./, (route) => route.abort());
-await page.goto(`http://localhost:${server.address().port}/index.html?export=1&w=320&h=180`);
+await page.goto(`http://localhost:${server.address().port}/index.html?export=1&w=320&h=180&theme=${theme}`);
 await page.waitForFunction(() => window.ready === true, null, { timeout: 180000 });
 const { glb, lights } = await page.evaluate(() => window.exportGLB());
 fs.mkdirSync(outDir, { recursive: true });
-fs.writeFileSync(path.join(outDir, 'apartment.glb'), Buffer.from(glb, 'base64'));
-fs.writeFileSync(path.join(outDir, 'lights.json'), JSON.stringify(lights, null, 1));
-console.log('wrote', path.join(outDir, 'apartment.glb'), (Buffer.from(glb, 'base64').length / 1e6).toFixed(1), 'MB');
+fs.writeFileSync(path.join(outDir, `apartment${suffix}.glb`), Buffer.from(glb, 'base64'));
+fs.writeFileSync(path.join(outDir, `lights${suffix}.json`), JSON.stringify(lights, null, 1));
+console.log('wrote', path.join(outDir, `apartment${suffix}.glb`), (Buffer.from(glb, 'base64').length / 1e6).toFixed(1), 'MB');
 await browser.close();
 server.close();
